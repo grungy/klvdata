@@ -39,8 +39,7 @@ class SetParser(Element, metaclass=ABCMeta):
     def __init__(self, value, key_length=1):
         """All parser needs is the value, no other information"""
         super().__init__(self.key, value)
-        if not hasattr(self, 'key_length'):
-            self.key_length = key_length
+        self.key_length = key_length
         self.items = OrderedDict()
         self.parse()
 
@@ -58,12 +57,15 @@ class SetParser(Element, metaclass=ABCMeta):
 
         If a known parser is not available for key, parse as generic KLV element.
         """
+        import logging
         for key, value in KLVParser(self.value, self.key_length):
             try:
                 self.items[key] = self.parsers[key](value)
-            except (KeyError, TypeError):
+            except KeyError:
                 self.items[key] = self._unknown_element(key, value)
-            except ValueError:
+            except Exception as e:
+                # Log and store as unknown element rather than throwing
+                logging.warning(f"KLV parse error for tag {key.hex()}: {e}")
                 self.items[key] = self._unknown_element(key, value)
 
     @classmethod
@@ -125,8 +127,6 @@ class SetParser(Element, metaclass=ABCMeta):
                 print(indent * "\t" + str(type(item)))
                 if hasattr(item, 'items'):
                     repeat(item.items.values(), indent+1)
-                else:
-                    print((indent+1) * "\t" + str(item.value))
 
         repeat(self.items.values())
 
@@ -136,7 +136,7 @@ def str_dict(values):
 
     def per_item(value, indent=0):
         for item in value:
-            if isinstance(item, Element):
+            if isinstance(item):
                 out.append(indent * "\t" + str(item))
             else:
                 out.append(indent * "\t" + str(item))

@@ -51,7 +51,7 @@ class KLVParser(object):
             length = byte_length
         else:
             # BER Long Form
-            length = bytes_to_int(self.__read(byte_length - 128))
+            length = bytes_to_int(self.__read(byte_length - 128)) #FIXME sometimes the num bytes exceeds the size of an int.
 
         value = self.__read(length)
 
@@ -69,4 +69,3 @@ class KLVParser(object):
             return data
         else:
             raise StopIteration
-
